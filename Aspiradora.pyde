@@ -72,7 +72,7 @@ def draw():
     #Iniciar el simulador
     if limpiando:
         if num>=1:
-            if num == 100:
+            if num == 50:
                 print("\nSimulación, iniciando en el estado" + 
                       str(situacion) + "\n")
                 print('Acción'.center(15) +
