@@ -14,7 +14,7 @@ global situacion
 global num
 
 #Cantidad de pasos totales: Si realiza una acción se incrementa en 1, sino se mantiene
-global c
+global pasos
 
 #Agente inteligente (Aleatorio, reactivo, reactivo basado en modelos)
 global agente
@@ -29,17 +29,17 @@ global aspiradora, basura, cuarto
 #Fúncion que se va ejecutar sólo una vez cuando inicie el juego
 def setup():
     global b1x, b2x, b3x, b1y, b2y, b3y
-    global limpiando, situacion, num, fila, c, basura, aspiradora
+    global limpiando, situacion, num, fila, pasos, basura, aspiradora
     
     #Tamaño de la ventana
-    size(600,450)
+    size(900,450)
     
     limpiando       = False
-    situacion       = ['A', 'sucio', 'sucio']
+    situacion       = ['A', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio']
     fila            = ["nada", situacion, '0']
     num             = 50
-    c               = 0
-    b1y = b2y = b3y = 370
+    pasos           = 0
+    b1y = b2y = b3y = 390
     b1x             = width/4
     b2x             = width/2
     b3x             = width/2 + width/4
@@ -49,7 +49,7 @@ def setup():
 
 #Funcion que se dibuja repetidamente, termina y se vuelve a dibujar
 def draw():
-    global limpiando, num, c, agente, situacion, fila
+    global limpiando, num, pasos, agente, situacion, fila
     
     #Dibujar los botones
     fill(255)
@@ -59,14 +59,19 @@ def draw():
     boton3()
     
     #Dibujar los cuartos
-    for x in range(0,2):
-        rect(x*300, 10, 300, 300)
+    for x in range(0,3):
+        for y in range (0,2):
+            rect(x*300, y*180+10, 300, 150)
     
     #Poner nombre a los cuartos
     textSize(40)
     fill(0)
-    text("A", width/4, 30)
-    text("B", width-width/4, 30)
+    text("A", width/6, 30)
+    text("B", width/2, 30)
+    text("C", width-width/6, 30)
+    text("D", width/6, 210)
+    text("E", width/2, 210)
+    text("F", width-width/6, 210)
     fill(255)
     
     #Iniciar el simulador
@@ -77,26 +82,27 @@ def draw():
                       str(situacion) + "\n")
                 print('Acción'.center(15) +
                     'Siguente estado'.center(25) +
-                    'Costo'.center(15))
-                print('_' * (15 + 25 + 15))
-                delay(500)
+                    'Costo'.center(30))
+                print('_' * (15 + 25 + 15 + 30))
+                fila = ["nada", situacion, '0']
             
             simulador(DosCuartos(), agente)
-            
+            escenario(fila)
+            delay(100)
             a, s_n, costo = fila
             #Imprimir la fila
             print(str(a).center(15) +
                         str(s_n).center(25) +
-                        str(costo).rjust(12))
+                        str(costo).rjust(20))
             
             if num==1:
-                print('_' * (15 + 25 + 15) + '\n\n')
+                print('_' * (15 + 25 + 15 + 30) + '\n\n')
             
             num = num-1
         else:
             limpiando = False
             num       = 50
-            c         = 0
+            pasos     = 0
     else:
         #Dibujar el estado inicial
         escenario(fila)
@@ -104,29 +110,58 @@ def draw():
 
 #Abstractamente indica que cosa hacer con el cuarto.
 class DosCuartos():
-    def accion_legal(self, accion):
-        return accion in ("ir_A", "ir_B", "limpiar", "nada")
+    def accion_legal(self, accion, posicion):
+        return (accion in ("ir_A", "ir_C", "limpiar", "nada") if posicion == "B" else
+               accion in ("ir_B", "limpiar", "nada") if posicion == "A" else
+               accion in ("ir_B", "ir_F", "limpiar", "nada") if posicion == "C" else
+               accion in ("ir_E", "limpiar", "nada") if posicion == "D" else
+               accion in ("ir_D", "ir_F", "limpiar", "nada") if posicion == "E" else
+               accion in ("ir_E", "ir_C", "limpiar", "nada"))
 
     def transicion(self, estado, accion):
-        robot, a, b = estado
-        c_local = 0 if a == b == "limpio" and accion == "nada" else 1
+        robot, a, b, c, d, e, f = estado
+        c_local = 0 if a == b == c == d == e == f == "limpio" and accion == "nada" else 1
 
         if a == "nada":
             return (estado, c_local)
         else:
             if accion == "ir_A":
-                return (("A", a, b), c_local)
+                return (("A", a, b, c, d, e, f), c_local)
             else:
                 if accion == "ir_B":
-                    return (("B", a, b), c_local)
+                    return (("B", a, b, c, d, e, f), c_local)
                 else:
-                    if robot == "A":
-                        return ((robot, "limpio", b), c_local)
+                    if accion == "ir_C":
+                        return (("C", a, b, c, d, e, f), c_local)
                     else:
-                        return ((robot, a, "limpio"), c_local)
+                        if accion == "ir_D":
+                            return (("D", a, b, c, d, e, f), c_local)
+                        else:
+                            if accion == "ir_E":
+                                return (("E", a, b, c, d, e, f), c_local)
+                            else:
+                                if accion == "ir_F":
+                                    return (("C", a, b, c, d, e, f), c_local)
+                                else:
+                                    if robot == "A":
+                                        return ((robot, "limpio", b, c, d, e, f), c_local)
+                                    else:
+                                        if robot == "B":
+                                            return ((robot, a, "limpio", c, d, e, f), c_local)
+                                        else:
+                                            if robot == "C":
+                                                return ((robot, a, b, "limpio", d, e, f), c_local)
+                                            else:
+                                                if robot == "D":
+                                                    return ((robot, a, b, c, "limpio", e, f), c_local)
+                                                else:
+                                                    if robot == "E":
+                                                        return ((robot, a, c, d, "limpio", f), c_local)
+                                                    else:
+                                                        return ((robot, a, b, d, e, "limpio"), c_local)
 
     def percepcion(self, estado):
-        return estado[0], estado[" AB".find(estado[0])]
+        return estado[0], estado[" ABCDEF".find(estado[0])]
 
 
 #AGENTE ALEATORIO
@@ -145,41 +180,44 @@ class AgenteReactivoDoscuartos():
     def programa(self, percepcion):
         robot, situacion = percepcion
         return ('limpiar' if situacion == 'sucio' else # Si esta sucio va a retonar limpiar sino, compara si robot es B, va al A; si no va al  B;
-                'ir_A' if robot == 'B' else 'ir_B')
+                'ir_B' if robot == 'A' else
+                'ir_C' if robot == 'B' else 'ir_B')
 
 
 #AGENTE REACTIVO BASADO EN MODELOS
 class AgenteReactivoModeloDosCuartos():
     def __init__(self):
-        self.modelo = ['A', 'sucio', 'sucio']
+        self.modelo = ['A', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio']
 
     def programa(self, percepcion):
         robot, situacion = percepcion
 
         # Actualiza el modelo interno
         self.modelo[0] = robot
-        self.modelo[' AB'.find(robot)] = situacion
+        self.modelo[' ABCDEF'.find(robot)] = situacion
 
         # Decide sobre el modelo interno
-        a, b = self.modelo[1], self.modelo[2]
-        return ('nada' if a == b == 'limpio' else
+        a, b, c = self.modelo[1], self.modelo[2], self.modelo[3]
+        return ('nada' if a == b == c == 'limpio' else
                 'limpiar' if situacion == 'sucio' else
-                'ir_A' if robot == 'B' else 'ir_B')
+                'ir_B' if robot == 'A' else
+                'ir_C' if robot == 'B' else 'ir_B')
 
 
 #Le manda el estado actual al agente
 #Esta función es la que hace posbile nuestro programa.
 def simulador(entorno, agente):
-    global fila, situacion, c
-    a = agente.programa(entorno.percepcion(situacion))
-    if not entorno.accion_legal(a):
-        raise ValueError("Error en el agente, ofrece una accion no legal")
-    situacion, c_local = entorno.transicion(situacion, a) #Retonar la nueva situacion y el paso que ha dado
+    global fila, situacion, pasos
+    robot, a, b, c, d, e, f = situacion
+    acc = agente.programa(entorno.percepcion(situacion))
+    while not entorno.accion_legal(acc, robot):
+        acc = agente.programa(entorno.percepcion(situacion))
+        #raise ValueError("Error en el agente, ofrece una accion no legal")
+    situacion, c_local = entorno.transicion(situacion, acc) #Retonar la nueva situacion y el paso que ha dado
     
-    c = c + c_local
-    fila = [a, situacion, c]
-    
-    escenario(fila)
+    pasos += c_local
+    fila = [acc, situacion, pasos]
+
 
 
 def escenario(estado):
@@ -187,22 +225,30 @@ def escenario(estado):
     redraw()
     imageMode(CENTER)
     acc, sit, c = estado
-    robot, a, b = sit
+    robot, a, b, c, d, e, f = sit
     if acc == "limpiar":
         if robot == "A":
-            image(aspiradora, width/4, 160, 100, 100)
+            image(aspiradora, width/6, 100, 80, 80)
         else:
-            image(aspiradora, width/2+width/4, 160, 100, 100)
+            if robot == "B":
+                image(aspiradora, width/2, 100, 80, 80)
+            else:
+                image(aspiradora, width-width/6, 100, 80, 80)
     else:
         if robot == "A":
-            image(aspiradora, width/10, 160, 100, 100)
+            image(aspiradora, width/16, 100, 80, 80)
         else:
-            image(aspiradora, width/2+width/10, 160, 100, 100)
+            if robot == "B":
+                image(aspiradora, width/2-width/10, 100, 80, 80)
+            else:
+                image(aspiradora, width/2+width/4, 100, 80, 80)
     
     if a == "sucio":
-        image(basura, width/4, 160, 100, 100)
+        image(basura, width/6, 100, 80, 80)
     if b == "sucio":
-        image(basura, width - width/4, 160, 100, 100)
+        image(basura, width/2, 100, 80, 80)
+    if c == "sucio":
+        image(basura, width - width/6, 100, 80, 80)
     delay(50)
     
     imageMode(CORNER)
@@ -212,19 +258,19 @@ def escenario(estado):
 def mousePressed():
     global b1x, b2x, b3x, b1y, b2y, b3y
     global limpiando, agente, situacion
-    #Mousex, Mousey =Psicion del mouse
+    #Mousex, Mousey =Posicion del mouse
     if mouseX > b1x-70 and mouseY > b1y-25 and  mouseX < b1x+70 and mouseY < b1y+25:
         #Lo vuelve a dejar en Sucio,sucio para que el otro agente que quiera inicializarse reconozca que esta sucio, sucio.
-        situacion = ['A', 'sucio', 'sucio']
+        situacion = ['A', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio']
         fill(100)
         boton1()
         print("Prueba del entorno con un agente aleatorio")
-        agente    = AgenteAleatorio(['ir_A', 'ir_B', 'limpiar', 'nada'])
+        agente    = AgenteAleatorio(['ir_A', 'ir_B', 'ir_C', 'limpiar', 'nada'])
         limpiando = True
         
     if mouseX > b2x-70 and mouseY > b2y-25 and  mouseX < b2x+70 and mouseY < b2y+25:
         #Lo vuelve a dejar en Sucio,sucio para que el otro agente que quiera inicializarse reconozca que esta sucio, sucio.
-        situacion = ['A', 'sucio', 'sucio']
+        situacion = ['A', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio']
         fill(100)
         boton2()
         print("Prueba del entorno con un agente reactivo")
@@ -233,7 +279,7 @@ def mousePressed():
         
     if mouseX > b3x-70 and mouseY > b3y-25 and  mouseX < b3x+70 and mouseY < b3y+25:
         #Lo vuelve a dejar en Sucio,sucio para que el otro agente que quiera inicializarse reconozca que esta sucio, sucio.
-        situacion = ['A', 'sucio', 'sucio']
+        situacion = ['A', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio', 'sucio']
         fill(100)
         boton3()
         print("Prueba del entorno con un agente reactivo con modelo")
@@ -243,7 +289,7 @@ def mousePressed():
 def boton1():
     global b1x, b1y
     rectMode(CENTER)
-    rect(b1x, b1y, 140, 50)
+    rect(b1x, b1y, 160, 50)
     delay(25)
     fill(0)
     textSize(10)
@@ -254,7 +300,7 @@ def boton1():
 def boton2():
     global b2x, b2y
     rectMode(CENTER)
-    rect(b2x, b2y, 140, 50)
+    rect(b2x, b2y, 160, 50)
     delay(25)
     fill(0)
     textSize(10)
@@ -265,7 +311,7 @@ def boton2():
 def boton3():
     global b3x, b3y
     rectMode(CENTER)
-    rect(b3x, b3y, 140, 50)
+    rect(b3x, b3y, 160, 50)
     delay(25)
     fill(0)
     textSize(10)
